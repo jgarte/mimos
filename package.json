@@ -3,7 +3,7 @@
   "description": "Mime database interface",
   "version": "7.0.1",
   "repository": "git://github.com/hapijs/mimos",
-  "main": "lib/index.js",
+  "main": "lib/index.ts",
   "types": "lib/index.d.ts",
   "files": [
     "lib"
