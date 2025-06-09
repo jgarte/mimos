@@ -1,9 +1,8 @@
 'use strict';
 
-const Path = require('path');
-
-const Hoek = require('@hapi/hoek');
-const MimeDb = require('mime-db/db.json');          // Load JSON file to prevent loading or executing code
+import type { MimeDb, MimosEntry, MimosDeclaration, MimosOptions, Mimos } from './types';
+import * as Path from 'path';
+import * as Hoek from '@hapi/hoek';
 
 
 const internals = {
@@ -11,10 +10,13 @@ const internals = {
 };
 
 
-exports.MimosEntry = class {
+export class MimeEntry {
+    type: MimeDb.MimeSource;
+    source: string;
+    extensions: string[];
+    compressible: boolean | undefined;
 
-    constructor(type, mime) {
-
+    constructor(type: string, mime: any) {
         this.type = type;
         this.source = 'mime-db';
         this.extensions = [];
@@ -29,7 +31,7 @@ exports.MimosEntry = class {
 };
 
 
-internals.insertEntry = function (type, entry, db) {
+export const insertEntry = (type: string, entry: MimeEntry, db: any) => {
 
     db.byType.set(type, entry);
     for (const ext of entry.extensions) {
@@ -41,7 +43,7 @@ internals.insertEntry = function (type, entry, db) {
 };
 
 
-internals.compile = function (mimedb) {
+export const compile = mimedb => {
 
     const db = {
         byType: new Map(),
@@ -51,21 +53,21 @@ internals.compile = function (mimedb) {
 
     for (const type in mimedb) {
         const entry = new exports.MimosEntry(type, mimedb[type]);
-        internals.insertEntry(type, entry, db);
+        insertEntry(type, entry, db);
     }
 
     return db;
 };
 
 
-internals.getTypePart = function (fulltype) {
+export const getTypePart = (fulltype: string) => {
 
     const splitAt = fulltype.indexOf(';');
     return splitAt === -1 ? fulltype : fulltype.slice(0, splitAt);
 };
 
 
-internals.applyPredicate = function (mime) {
+export const applyPredicate = (mime: MimosDeclaration) => {
 
     if (mime.predicate) {
         return mime.predicate(Hoek.clone(mime));
@@ -75,7 +77,7 @@ internals.applyPredicate = function (mime) {
 };
 
 
-exports.Mimos = class Mimos {
+class Mimos {
 
     #db = internals.base;
 
@@ -102,22 +104,22 @@ exports.Mimos = class Mimos {
                 const baseEntry = from ? Hoek.applyToDefaults(from, override) : override;
 
                 const entry = new exports.MimosEntry(type, baseEntry);
-                internals.insertEntry(type, entry, this.#db);
+                insertEntry(type, entry, this.#db);
             }
         }
     }
 
-    path(path) {
+    path(path: string) {
 
         const extension = Path.extname(path).slice(1).toLowerCase();
         const mime = this.#db.byExtension.get(extension) ?? {};
 
-        return internals.applyPredicate(mime);
+        return applyPredicate(mime);
     }
 
-    type(type) {
+    type(type: string) {
 
-        type = internals.getTypePart(type);
+        type = getTypePart(type);
 
         let mime = this.#db.byType.get(type);
         if (!mime) {
@@ -134,14 +136,11 @@ exports.Mimos = class Mimos {
 
             // Cache the entry
 
-            internals.insertEntry(type, mime, this.#db);
+            insertEntry(type, mime, this.#db);
 
             return mime;
         }
 
-        return internals.applyPredicate(mime);
+        return applyPredicate(mime);
     }
 };
-
-
-internals.base = internals.compile(MimeDb);

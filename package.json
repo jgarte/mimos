@@ -4,7 +4,7 @@
   "version": "7.0.1",
   "repository": "git://github.com/hapijs/mimos",
   "main": "lib/index.ts",
-  "types": "lib/index.d.ts",
+  "types": "lib/types.ts",
   "files": [
     "lib"
   ],
@@ -30,8 +30,10 @@
     "typescript": "~4.6.4"
   },
   "scripts": {
-    "test": "lab -m 5000 -t 100 -L -a @hapi/code -Y",
-    "test-cov-html": "lab -a @hapi/code -r html -o coverage.html -L"
+    "test": "node --experimental-strip-types --test --experimental-test-coverage --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-lines=100 --test-coverage-exclude=test/** test/**/*.ts",
+    "test-cov-html": "lab -a @hapi/code -r html -o coverage.html -L",
+    "lint": "tsc --noEmit && eslint . --ext .js,.ts",
+    "build": "tsc -p tsconfig.build.json --outDir dist"
   },
   "license": "BSD-3-Clause"
 }

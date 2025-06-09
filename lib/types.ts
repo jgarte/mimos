@@ -1,6 +1,6 @@
 // Declare our own interface to mime-db data
 
-declare namespace MimeDb {
+export declare namespace MimeDb {
 
     type MimeSource = 'iana' | 'apache' | 'nginx';
 
