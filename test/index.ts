@@ -1,14 +1,8 @@
-'use strict';
-
-const Code = require('@hapi/code');
-const Lab = require('@hapi/lab');
-const Mimos = require('..');
+import { describe, it } from 'node:test';
+import Code from '@hapi/code';
+import * as Mimos from '../lib/index.ts';
 
 
-const internals = {};
-
-
-const { describe, it } = exports.lab = Lab.script();
 const expect = Code.expect;
 
 
@@ -24,6 +18,7 @@ describe('Mimos', () => {
                 source: 'iana',
                 charset: 'UTF-8',
                 compressible: true,
+                predicate: undefined,
                 extensions: ['js', 'mjs'],
                 type: 'text/javascript'
             });

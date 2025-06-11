@@ -2,6 +2,7 @@
 
 import * as Path from 'path';
 import * as Hoek from '@hapi/hoek';
+import MimeDb from 'mime-db/db.json' with { type: 'json' };
 
 
 export type MimeSource = 'iana' | 'apache' | 'nginx'; 
@@ -36,7 +37,7 @@ export interface MimeDbEntry {
 const compressibleRx = /^text\/|\+json$|\+text$|\+xml$/;
 
 
-export class MimeEntry {
+export class MimosEntry {
     type: MimeSource;
     source: MimosSource;
     extensions: string[];
@@ -47,7 +48,7 @@ export class MimeEntry {
      * When this mime type is found in the database, this function will run.
      * This allows you to make customizations to `mime` based on developer criteria.
      */
-    predicate?: <P extends MimeEntry>(mime: P) => P; 
+    predicate?: <P extends MimosEntry>(mime: P) => P; 
 
     constructor(type: MimeSource, mime: MimeDbEntry) {
         this.type = type;
@@ -64,12 +65,12 @@ export class MimeEntry {
 };
 
 class MimosDb {
-    byType: Map<string, MimeEntry> = new Map();
-    byExtension: Map<string, MimeEntry> = new Map();
+    byType: Map<string, MimosEntry> = new Map();
+    byExtension: Map<string, MimosEntry> = new Map();
     maxExtLength: number = 0;
 }
 
-export const insertEntry = (type: string, entry: MimeEntry, db: MimosDb) => {
+export const insertEntry = (type: string, entry: MimosEntry, db: MimosDb) => {
 
     db.byType.set(type, entry);
 
@@ -89,7 +90,7 @@ export const compile = (mimedb: MimeDbEntry[]) => {
     const db = new MimosDb();
 
     for (const type in mimedb) {
-        const entry = new exports.MimosEntry(type, mimedb[type]);
+        const entry = new MimosEntry(type as MimeSource, mimedb[type] as never);
         insertEntry(type, entry, db);
     }
 
@@ -104,7 +105,7 @@ export const getTypePart = (fulltype: string) => {
 };
 
 
-export const applyPredicate = (mime: MimeEntry) => {
+export const applyPredicate = (mime: MimosEntry) => {
 
     if (mime.predicate) {
         return mime.predicate(Hoek.clone(mime));
@@ -113,12 +114,15 @@ export const applyPredicate = (mime: MimeEntry) => {
     return mime;
 };
 
+export interface MimosOptions {
+    override?: Record<string, MimosEntry>;
+}
 
-class Mimos {
+export class Mimos {
 
-    #db: MimosDb = internals.base;
+    #db: MimosDb = compile(MimeDb as never);
 
-    constructor(options = {}) {
+    constructor(options: MimosOptions = {}) {
 
         if (options.override) {
             Hoek.assert(typeof options.override === 'object', 'overrides option must be an object');
@@ -134,13 +138,13 @@ class Mimos {
             // Apply overrides
 
             for (const type in options.override) {
-                const override = options.override[type];
+                const override = options.override[type] as MimosEntry;
                 Hoek.assert(!override.predicate || typeof override.predicate === 'function', 'predicate option must be a function');
 
                 const from = this.#db.byType.get(type);
                 const baseEntry = from ? Hoek.applyToDefaults(from, override) : override;
 
-                const entry = new exports.MimosEntry(type, baseEntry);
+                const entry = new MimosEntry(type as MimeSource, baseEntry as never);
                 insertEntry(type, entry, this.#db);
             }
         }
@@ -151,7 +155,7 @@ class Mimos {
         const extension = Path.extname(path).slice(1).toLowerCase();
         const mime = this.#db.byExtension.get(extension) ?? {};
 
-        return applyPredicate(mime);
+        return applyPredicate(mime as never);
     }
 
     type(type: string) {
@@ -167,8 +171,8 @@ class Mimos {
         }
 
         if (!mime) {
-            mime = new exports.MimosEntry(type, {
-                source: 'mimos'
+            mime = new MimosEntry(type as MimeSource, {
+                source: 'mimos' as MimeSource
             });
 
             // Cache the entry
