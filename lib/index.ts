@@ -1,5 +1,3 @@
-'use strict';
-
 import * as Path from 'path';
 import * as Hoek from '@hapi/hoek';
 import MimeDb from 'mime-db/db.json' with { type: 'json' };
