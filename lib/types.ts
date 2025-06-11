@@ -2,7 +2,7 @@
 
 export declare namespace MimeDb {
 
-    type MimeSource = 'iana' | 'apache' | 'nginx';
+    type MimeSource = 'iana' | 'apache' | 'nginx' | 'mime-db';
 
     interface MimeEntry {
 

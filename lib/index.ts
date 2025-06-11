@@ -1,22 +1,55 @@
 'use strict';
 
-import type { MimeDb, MimosEntry, MimosDeclaration, MimosOptions, Mimos } from './types';
 import * as Path from 'path';
 import * as Hoek from '@hapi/hoek';
 
 
-const internals = {
-    compressibleRx: /^text\/|\+json$|\+text$|\+xml$/
-};
+export type MimeSource = 'iana' | 'apache' | 'nginx'; 
+
+type MimosSource = MimeSource | 'mime-db' | 'mimos';
+
+export interface MimeDbEntry {
+
+    /**
+     * String with identifier for the source of the data.
+     */
+    source?: MimeSource;
+
+    /**
+     * Array of strings with possible lowercased file extensions, without the
+     * dot.
+     */
+    extensions?: ReadonlyArray<string>;
+
+    /**
+     * Boolean that indicates if the contents is likely to become smaller if
+     * gzip or similar compression is applied.
+     */
+    compressible?: boolean;
+
+    /**
+     * Charset for type.
+     */
+    charset?: string;
+}
+
+const compressibleRx = /^text\/|\+json$|\+text$|\+xml$/;
 
 
 export class MimeEntry {
-    type: MimeDb.MimeSource;
-    source: string;
+    type: MimeSource;
+    source: MimosSource;
     extensions: string[];
     compressible: boolean | undefined;
+    /**
+     * Method with signature `function(mime)`.
+     *
+     * When this mime type is found in the database, this function will run.
+     * This allows you to make customizations to `mime` based on developer criteria.
+     */
+    predicate?: <P extends MimeEntry>(mime: P) => P; 
 
-    constructor(type: string, mime: any) {
+    constructor(type: MimeSource, mime: MimeDbEntry) {
         this.type = type;
         this.source = 'mime-db';
         this.extensions = [];
@@ -25,17 +58,25 @@ export class MimeEntry {
         Object.assign(this, mime);
 
         if (this.compressible === undefined) {
-            this.compressible = internals.compressibleRx.test(type);
+            this.compressible = compressibleRx.test(type);
         }
     }
 };
 
+class MimosDb {
+    byType: Map<string, MimeEntry> = new Map();
+    byExtension: Map<string, MimeEntry> = new Map();
+    maxExtLength: number = 0;
+}
 
-export const insertEntry = (type: string, entry: MimeEntry, db: any) => {
+export const insertEntry = (type: string, entry: MimeEntry, db: MimosDb) => {
 
     db.byType.set(type, entry);
+
     for (const ext of entry.extensions) {
+
         db.byExtension.set(ext, entry);
+
         if (ext.length > db.maxExtLength) {
             db.maxExtLength = ext.length;
         }
@@ -43,13 +84,9 @@ export const insertEntry = (type: string, entry: MimeEntry, db: any) => {
 };
 
 
-export const compile = mimedb => {
+export const compile = (mimedb: MimeDbEntry[]) => {
 
-    const db = {
-        byType: new Map(),
-        byExtension: new Map(),
-        maxExtLength: 0
-    };
+    const db = new MimosDb();
 
     for (const type in mimedb) {
         const entry = new exports.MimosEntry(type, mimedb[type]);
@@ -67,7 +104,7 @@ export const getTypePart = (fulltype: string) => {
 };
 
 
-export const applyPredicate = (mime: MimosDeclaration) => {
+export const applyPredicate = (mime: MimeEntry) => {
 
     if (mime.predicate) {
         return mime.predicate(Hoek.clone(mime));
@@ -79,7 +116,7 @@ export const applyPredicate = (mime: MimosDeclaration) => {
 
 class Mimos {
 
-    #db = internals.base;
+    #db: MimosDb = internals.base;
 
     constructor(options = {}) {
 
