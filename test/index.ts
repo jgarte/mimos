@@ -59,6 +59,7 @@ describe('Mimos', () => {
                 source: 'iana',
                 compressible: true,
                 extensions: ['txt', 'text', 'conf', 'def', 'list', 'log', 'in', 'ini'],
+                predicate: undefined,
                 type: 'text/plain'
             });
         });
@@ -71,6 +72,7 @@ describe('Mimos', () => {
                 source: 'iana',
                 compressible: true,
                 extensions: ['txt', 'text', 'conf', 'def', 'list', 'log', 'in', 'ini'],
+                predicate: undefined,
                 type: 'text/plain'
             });
         });
@@ -83,6 +85,7 @@ describe('Mimos', () => {
                 source: 'mimos',
                 compressible: false,
                 extensions: [],
+                predicate: undefined,
                 type: 'hapi/test'
             });
         });
@@ -94,6 +97,7 @@ describe('Mimos', () => {
             source: 'iana',
             compressible: false,
             extensions: ['node', 'module', 'npm'],
+            predicate: undefined,
             type: 'node/module'
         };
         const dbOverwrite = {
@@ -114,6 +118,7 @@ describe('Mimos', () => {
             charset: 'UTF-8',
             compressible: true,
             extensions: ['js', 'javascript'],
+            predicate: undefined,
             type: 'text/javascript'
         };
         const dbOverwrite = {
