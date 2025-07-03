@@ -3,7 +3,7 @@ import * as Hoek from '@hapi/hoek';
 import MimeDb from 'mime-db/db.json' with { type: 'json' };
 
 
-export type MimeSource = 'iana' | 'apache' | 'nginx'; 
+export type MimeSource = 'iana' | 'apache' | 'nginx';
 
 type MimosSource = MimeSource | 'mime-db' | 'mimos';
 
@@ -46,7 +46,7 @@ export class MimosEntry {
      * When this mime type is found in the database, this function will run.
      * This allows you to make customizations to `mime` based on developer criteria.
      */
-    predicate?: <P extends MimosEntry>(mime: P) => P; 
+    predicate?: <P extends MimosEntry>(mime: P) => P;
 
     constructor(type: MimeSource, mime: MimeDbEntry) {
         this.type = type;
@@ -60,7 +60,7 @@ export class MimosEntry {
             this.compressible = compressibleRx.test(type);
         }
     }
-};
+}
 
 class MimosDb {
     byType: Map<string, MimosEntry> = new Map();
@@ -88,7 +88,7 @@ export const compile = (mimedb: MimeDbEntry[]) => {
     const db = new MimosDb();
 
     for (const type in mimedb) {
-        const entry = new MimosEntry(type as MimeSource, mimedb[type] as never);
+        const entry = new MimosEntry(type as MimeSource, mimedb[type] as MimeDbEntry);
         insertEntry(type, entry, db);
     }
 
@@ -118,7 +118,8 @@ export interface MimosOptions {
 
 export class Mimos {
 
-    #db: MimosDb = compile(MimeDb as never);
+    // @ts-ignore
+    #db: MimosDb = compile(MimeDb as MimeDbEntry[]);
 
     constructor(options: MimosOptions = {}) {
 
@@ -142,7 +143,7 @@ export class Mimos {
                 const from = this.#db.byType.get(type);
                 const baseEntry = from ? Hoek.applyToDefaults(from, override) : override;
 
-                const entry = new MimosEntry(type as MimeSource, baseEntry as never);
+                const entry = new MimosEntry(type as MimeSource, baseEntry as MimeDbEntry);
                 insertEntry(type, entry, this.#db);
             }
         }
@@ -153,7 +154,7 @@ export class Mimos {
         const extension = Path.extname(path).slice(1).toLowerCase();
         const mime = this.#db.byExtension.get(extension) ?? {};
 
-        return applyPredicate(mime as never);
+        return applyPredicate(mime as MimosEntry);
     }
 
     type(type: string) {
@@ -182,4 +183,4 @@ export class Mimos {
 
         return applyPredicate(mime);
     }
-};
+}
